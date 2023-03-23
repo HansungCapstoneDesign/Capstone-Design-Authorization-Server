@@ -19,7 +19,7 @@ public class CORSCustomizer {
       CorsConfigurationSource source = s -> {
         CorsConfiguration cc = new CorsConfiguration();
         cc.setAllowCredentials(true);
-        cc.setAllowedOrigins(List.of("http://localhost:3000"));
+        cc.setAllowedOrigins(List.of("http://localhost:8070")); // set your nginx port here
         cc.setAllowedHeaders(List.of("*"));
         cc.setAllowedMethods(List.of("*"));
         return cc;

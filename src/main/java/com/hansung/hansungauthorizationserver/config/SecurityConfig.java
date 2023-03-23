@@ -5,14 +5,22 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.server.authorization.authentication.*;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
@@ -26,16 +34,15 @@ import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 @Configuration
+@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final CORSCustomizer corsCustomizer;
-
-    public SecurityConfig(CORSCustomizer corsCustomizer) {
-        this.corsCustomizer = corsCustomizer;
-    }
 
     @Bean
     @Order(1) // 설정 1순위
@@ -44,9 +51,14 @@ public class SecurityConfig {
 
         http
                 .getConfigurer(OAuth2AuthorizationServerConfigurer.class)
+                .authorizationEndpoint(a ->
+                        a.authenticationProviders(configureAuthenticationValidator())
+                )
                 .oidc(Customizer.withDefaults());
 
-        http.exceptionHandling( // 에러 발생 시, Login 페이지로 이동
+        http
+                .oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt)
+                .exceptionHandling( // 에러 발생 시, Login 페이지로 이동
                 e -> e.authenticationEntryPoint(
                         new LoginUrlAuthenticationEntryPoint("/login")
                 )
@@ -102,6 +114,11 @@ public class SecurityConfig {
     }
 
     @Bean
+    public JwtDecoder jwtDecoder(JWKSource<SecurityContext> jwkSource) {
+        return OAuth2AuthorizationServerConfiguration.jwtDecoder(jwkSource);
+    }
+
+    @Bean
     public OAuth2TokenCustomizer<JwtEncodingContext> oAuth2TokenCustomizer() {
         return context -> {
             Collection<? extends GrantedAuthority> authorities = context.getPrincipal().getAuthorities();
@@ -109,5 +126,38 @@ public class SecurityConfig {
             context.getClaims().claim("authorities",
                     authorities.stream().map(GrantedAuthority::getAuthority).toList());
         };
+    }
+
+    private Consumer<List<AuthenticationProvider>> configureAuthenticationValidator() {
+        return (authenticationProviders) ->
+                authenticationProviders.forEach((authenticationProvider) -> {
+                    if (authenticationProvider instanceof OAuth2AuthorizationCodeRequestAuthenticationProvider) {
+                        Consumer<OAuth2AuthorizationCodeRequestAuthenticationContext> authenticationValidator =
+                                // Override default redirect_uri validator
+                                new CustomRedirectUriValidator()
+                                        // Reuse default scope validator
+                                        .andThen(OAuth2AuthorizationCodeRequestAuthenticationValidator.DEFAULT_SCOPE_VALIDATOR);
+
+                        ((OAuth2AuthorizationCodeRequestAuthenticationProvider) authenticationProvider)
+                                .setAuthenticationValidator(authenticationValidator);
+                    }
+                });
+    }
+
+    static class CustomRedirectUriValidator implements Consumer<OAuth2AuthorizationCodeRequestAuthenticationContext> {
+
+        @Override
+        public void accept(OAuth2AuthorizationCodeRequestAuthenticationContext authenticationContext) {
+            OAuth2AuthorizationCodeRequestAuthenticationToken authorizationCodeRequestAuthentication =
+                    authenticationContext.getAuthentication();
+            RegisteredClient registeredClient = authenticationContext.getRegisteredClient();
+            String requestedRedirectUri = authorizationCodeRequestAuthentication.getRedirectUri();
+
+            // Use exact string matching when comparing client redirect URIs against pre-registered URIs
+            if (!registeredClient.getRedirectUris().contains(requestedRedirectUri)) {
+                OAuth2Error error = new OAuth2Error(OAuth2ErrorCodes.INVALID_REQUEST);
+                throw new OAuth2AuthorizationCodeRequestAuthenticationException(error, null);
+            }
+        }
     }
 }
