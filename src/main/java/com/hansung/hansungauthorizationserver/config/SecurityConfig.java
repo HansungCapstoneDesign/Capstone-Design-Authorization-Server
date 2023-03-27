@@ -1,5 +1,6 @@
 package com.hansung.hansungauthorizationserver.config;
 
+import com.hansung.hansungauthorizationserver.service.OidcUserInfoService;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
@@ -12,12 +13,15 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
+import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
+import org.springframework.security.oauth2.core.oidc.endpoint.OidcParameterNames;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.authorization.authentication.*;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
@@ -39,6 +43,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 @Configuration
+@EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -51,19 +56,19 @@ public class SecurityConfig {
 
         http
                 .getConfigurer(OAuth2AuthorizationServerConfigurer.class)
-                .authorizationEndpoint(a ->
+                .authorizationEndpoint(a -> // localhost 환경에서 동작 허용
                         a.authenticationProviders(configureAuthenticationValidator())
                 )
-                .oidc(Customizer.withDefaults());
+                .oidc(Customizer.withDefaults()); // OpenID Connect
 
         http
-                .oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt)
+                .oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt) // userinfo 엔드포인트를 위해
                 .exceptionHandling( // 에러 발생 시, Login 페이지로 이동
                 e -> e.authenticationEntryPoint(
                         new LoginUrlAuthenticationEntryPoint("/login")
                 )
         );
-        corsCustomizer.corsCustomizer(http);
+        corsCustomizer.corsCustomizer(http); // CORS Configuration 적용
 
         return http.build();
     }
@@ -74,9 +79,14 @@ public class SecurityConfig {
         corsCustomizer.corsCustomizer(http);
 
         http
-                .formLogin() // Login Form Customize Possible !!!
+                .authorizeHttpRequests()
+                .requestMatchers("/profile_image/**").permitAll() // 프로필 이미지 접근 허용
+                .anyRequest().authenticated()
                 .and()
-                .authorizeHttpRequests().anyRequest().authenticated(); // 모든 요청에 대해 권한 요구
+                .formLogin()
+                .loginPage("/login")
+                .permitAll();
+
 
         return http.build();
     }
@@ -113,14 +123,22 @@ public class SecurityConfig {
         return new ImmutableJWKSet<>(set);
     }
 
+    // userinfo 엔드포인트를 위해
     @Bean
     public JwtDecoder jwtDecoder(JWKSource<SecurityContext> jwkSource) {
         return OAuth2AuthorizationServerConfiguration.jwtDecoder(jwkSource);
     }
 
     @Bean
-    public OAuth2TokenCustomizer<JwtEncodingContext> oAuth2TokenCustomizer() {
+    public OAuth2TokenCustomizer<JwtEncodingContext> oAuth2TokenCustomizer(OidcUserInfoService userInfoService) {
         return context -> {
+            if (OidcParameterNames.ID_TOKEN.equals(context.getTokenType().getValue())) { // ID Token Customize
+                OidcUserInfo userInfo = userInfoService.loadUser(
+                        context.getPrincipal().getName());
+                context.getClaims().claims(claims ->
+                        claims.putAll(userInfo.getClaims()));
+            }
+
             Collection<? extends GrantedAuthority> authorities = context.getPrincipal().getAuthorities();
 
             context.getClaims().claim("authorities",

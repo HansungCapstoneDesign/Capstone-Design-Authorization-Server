@@ -20,8 +20,8 @@ public class CustomUserDetailsService implements UserDetailsService {
     private final UserRepository userRepository;
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Optional<User> user = userRepository.findByUsername(username);
+    public UserDetails loadUserByUsername(String studentId) throws UsernameNotFoundException {
+        Optional<User> user = userRepository.findByStudentId(studentId);
         return user.map(SecurityUser::new).orElseThrow(() -> new UsernameNotFoundException("유저 정보가 없습니다."));
     }
 }
