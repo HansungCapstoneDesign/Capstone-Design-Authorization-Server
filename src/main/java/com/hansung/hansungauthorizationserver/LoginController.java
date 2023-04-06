@@ -38,7 +38,6 @@ public class LoginController {
         cookie.setPath("/");
         cookie.setMaxAge(0);
         response.addCookie(cookie);
-        response.sendRedirect("http://localhost:8070/login");
     }
 
 
