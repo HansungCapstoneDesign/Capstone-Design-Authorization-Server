@@ -28,4 +28,5 @@ public class OidcUserInfoService {
 
         return new OidcUserInfo(userInfo);
     }
+
 }

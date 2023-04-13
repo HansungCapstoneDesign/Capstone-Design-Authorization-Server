@@ -16,7 +16,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
@@ -64,10 +64,10 @@ public class SecurityConfig {
         http
                 .oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt) // userinfo 엔드포인트를 위해
                 .exceptionHandling( // 에러 발생 시, Login 페이지로 이동
-                e -> e.authenticationEntryPoint(
-                        new LoginUrlAuthenticationEntryPoint("/login")
-                )
-        );
+                        e -> e.authenticationEntryPoint(
+                                new LoginUrlAuthenticationEntryPoint("/login")
+                        )
+                );
         corsCustomizer.corsCustomizer(http); // CORS Configuration 적용
 
         return http.build();
@@ -93,7 +93,8 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return NoOpPasswordEncoder.getInstance(); // 절대 이대로 사용하지 않기
+//        return NoOpPasswordEncoder.getInstance(); // 절대 이대로 사용하지 않기
+        return new BCryptPasswordEncoder();
     }
 
     @Bean
@@ -178,4 +179,5 @@ public class SecurityConfig {
             }
         }
     }
+
 }

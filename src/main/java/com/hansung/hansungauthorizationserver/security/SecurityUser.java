@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.List;
 
 public class SecurityUser implements UserDetails {
+
     private final User user;
 
     public SecurityUser(User user) {
@@ -49,4 +50,5 @@ public class SecurityUser implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
+
 }

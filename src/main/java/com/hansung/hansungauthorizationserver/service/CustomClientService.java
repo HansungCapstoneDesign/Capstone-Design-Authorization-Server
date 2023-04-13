@@ -35,4 +35,10 @@ public class CustomClientService implements RegisteredClientRepository {
 
         return Client.from(client);
     }
+
+    @Transactional
+    public void init(Client client) {
+        clientRepository.save(client);
+    }
+
 }
