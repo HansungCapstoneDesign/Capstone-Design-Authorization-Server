@@ -28,4 +28,5 @@ public class CORSCustomizer {
             c.configurationSource(source);
         });
     }
+
 }
