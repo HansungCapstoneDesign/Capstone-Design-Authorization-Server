@@ -93,7 +93,6 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-//        return NoOpPasswordEncoder.getInstance(); // 절대 이대로 사용하지 않기
         return new BCryptPasswordEncoder();
     }
 
