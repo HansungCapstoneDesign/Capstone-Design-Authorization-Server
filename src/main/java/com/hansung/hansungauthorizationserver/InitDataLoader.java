@@ -84,6 +84,17 @@ public class InitDataLoader implements CommandLineRunner {
                 .firstTrack("모바일소프트웨어트랙")
                 .secondTrack("웹공학트랙")
                 .build();
+
+        User user5 = User.builder()
+                .studentId("2271234")
+                .username("새내기")
+                .password(passwordEncoder.encode("1234"))
+                .authority("ROLE_STUDENT")
+                .picture("http://localhost:8081/profile_image/picture.jpg")
+                .firstTrack("웹공학트랙")
+                .secondTrack("모바일소프트웨어트랙")
+                .build();
+
         User admin = User.builder()
                 .studentId("ADMIN")
                 .username("ADMIN")
@@ -94,12 +105,12 @@ public class InitDataLoader implements CommandLineRunner {
                 .secondTrack(null)
                 .build();
 
-
         clientService.init(client);
         userDetailsService.init(user1);
         userDetailsService.init(user2);
         userDetailsService.init(user3);
         userDetailsService.init(user4);
+        userDetailsService.init(user5);
         userDetailsService.init(admin);
     }
 
