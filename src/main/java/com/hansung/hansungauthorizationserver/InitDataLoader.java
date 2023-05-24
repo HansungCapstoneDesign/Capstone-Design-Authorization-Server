@@ -6,6 +6,7 @@ import com.hansung.hansungauthorizationserver.entity.User;
 import com.hansung.hansungauthorizationserver.service.CustomClientService;
 import com.hansung.hansungauthorizationserver.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -25,6 +26,11 @@ public class InitDataLoader implements CommandLineRunner {
     private final CustomUserDetailsService userDetailsService;
     private final CustomClientService clientService;
 
+    @Value("${feUri}")
+    private String feUri;
+    @Value("${asUri}")
+    private String asUri;
+
     @Override
     public void run(String... args) {
         Client client = Client.builder()
@@ -32,7 +38,7 @@ public class InitDataLoader implements CommandLineRunner {
                 .secret(passwordEncoder.encode("secret"))
                 .scope("openid")
                 .authMethod("client_secret_basic")
-                .redirectUri("http://localhost:8070/authorized")
+                .redirectUri(feUri + "/authorized")
                 .build();
 
         GrantType grantType1 = new GrantType();
@@ -50,7 +56,7 @@ public class InitDataLoader implements CommandLineRunner {
                 .username("권현택")
                 .password(passwordEncoder.encode("1234"))
                 .authority("ROLE_STUDENT")
-                .picture("http://localhost:8081/profile_image/picture.jpg")
+                .picture(asUri + "/profile_image/picture.jpg")
                 .firstTrack("모바일소프트웨어트랙")
                 .secondTrack("웹공학트랙")
                 .build();
@@ -60,7 +66,7 @@ public class InitDataLoader implements CommandLineRunner {
                 .username("오찬근")
                 .password(passwordEncoder.encode("1234"))
                 .authority("ROLE_STUDENT")
-                .picture("http://localhost:8081/profile_image/picture.jpg")
+                .picture(asUri + "/profile_image/picture.jpg")
                 .firstTrack("모바일소프트웨어트랙")
                 .secondTrack("웹공학트랙")
                 .build();
@@ -70,7 +76,7 @@ public class InitDataLoader implements CommandLineRunner {
                 .username("곽은서")
                 .password(passwordEncoder.encode("1234"))
                 .authority("ROLE_STUDENT")
-                .picture("http://localhost:8081/profile_image/picture.jpg")
+                .picture(asUri + "/profile_image/picture.jpg")
                 .firstTrack("모바일소프트웨어트랙")
                 .secondTrack("웹공학트랙")
                 .build();
@@ -80,7 +86,7 @@ public class InitDataLoader implements CommandLineRunner {
                 .username("김서영")
                 .password(passwordEncoder.encode("1234"))
                 .authority("ROLE_STUDENT")
-                .picture("http://localhost:8081/profile_image/picture.jpg")
+                .picture(asUri + "/profile_image/picture.jpg")
                 .firstTrack("모바일소프트웨어트랙")
                 .secondTrack("웹공학트랙")
                 .build();
@@ -90,7 +96,7 @@ public class InitDataLoader implements CommandLineRunner {
                 .username("새내기")
                 .password(passwordEncoder.encode("1234"))
                 .authority("ROLE_STUDENT")
-                .picture("http://localhost:8081/profile_image/picture.jpg")
+                .picture(asUri + "/profile_image/picture.jpg")
                 .firstTrack("웹공학트랙")
                 .secondTrack("모바일소프트웨어트랙")
                 .build();
@@ -100,7 +106,7 @@ public class InitDataLoader implements CommandLineRunner {
                 .username("ADMIN")
                 .password(passwordEncoder.encode("1234"))
                 .authority("ROLE_ADMIN")
-                .picture("http://localhost:8081/profile_image/picture.jpg")
+                .picture(asUri + "/profile_image/picture.jpg")
                 .firstTrack(null)
                 .secondTrack(null)
                 .build();
