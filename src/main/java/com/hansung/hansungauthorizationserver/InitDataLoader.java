@@ -102,7 +102,7 @@ public class InitDataLoader implements CommandLineRunner {
                 .build();
 
         User admin = User.builder()
-                .studentId("ADMIN")
+                .studentId("1800000")
                 .username("ADMIN")
                 .password(passwordEncoder.encode("1234"))
                 .authority("ROLE_ADMIN")
