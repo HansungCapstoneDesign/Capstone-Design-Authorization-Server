@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -32,6 +33,7 @@ import org.springframework.security.oauth2.server.authorization.token.JwtEncodin
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -63,11 +65,13 @@ public class SecurityConfig {
 
         http
                 .oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt) // userinfo 엔드포인트를 위해
-                .exceptionHandling( // 에러 발생 시, Login 페이지로 이동
-                        e -> e.authenticationEntryPoint(
-                                new LoginUrlAuthenticationEntryPoint("/login")
+                .exceptionHandling((exceptions) -> exceptions // 에러 발생 시, Login 페이지로 이동
+                        .defaultAuthenticationEntryPointFor(
+                                new LoginUrlAuthenticationEntryPoint("/login"),
+                                new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
                         )
                 );
+
         corsCustomizer.corsCustomizer(http); // CORS Configuration 적용
 
         return http.build();
